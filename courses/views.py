@@ -13,6 +13,7 @@ from django.forms.models import modelform_factory
 from django.apps import apps
 from .models import Module, Content
 
+from django.core.cache import cache
 
 # class ManageCourseListView(ListView):
 #     model = Course
@@ -23,7 +24,7 @@ from .models import Module, Content
 #         return qs.filter(owner=self.request.user)
     
 class OwnerMixin(object):
-    def get_qureyset(self):
+    def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(owner=self.request.user)
 
@@ -188,3 +189,51 @@ class ContentOrderView(CsrfExemptMixin, JsonRequestResponseMixin, View):
                                    module__course__owner=request.user).update(order=order)
         
         return self.render_json_response({'saved': 'OK'})
+
+
+from django.db.models import Count
+from .models import Subject
+
+class CourseListView(TemplateResponseMixin, View):
+    model = Course
+    template_name = 'courses/course/list.html'
+    
+    def get(self, request, subject=None):
+        subjects = cache.get('all_subjects')
+        if not subjects:
+            subjects = Subject.objects.annotate(total_courses=Count('courses'))
+            cache.set('all_subjects', subjects)
+        # courses = Course.objects.annotate(total_modules=Count('modules'))
+        all_courses = Course.objects.annotate(total_modules=Count('modules'))
+
+
+        if subject:
+            # 指定了课程
+            subject = get_object_or_404(Subject, slug=subject)
+            key = f'subject_{subject.id}_courses'
+            courses = cache.get(key)
+            if not courses:
+                courses = all_courses.filter(subject=subject)
+                cache.set(key, courses)
+        else:
+            courses = cache.get('all_cousers')
+            if not courses:
+                courses = all_courses
+                cache.set('all_courses', courses)
+                
+        return self.render_to_response({'subjects': subjects,
+                                        'subject': subject,
+                                        'courses': courses})
+
+from django.views.generic.detail import DetailView
+from students.forms import CourseEnrollForm
+
+class CourseDetailView(DetailView):
+    model = Course
+    template_name = 'courses/course/detail.html'
+
+    def get_context_data(self, **kwargs):
+        # 添加注册按钮
+        context = super().get_context_data(**kwargs)
+        context['enroll_form'] = CourseEnrollForm(initial={'course': self.object})
+        return context                                    

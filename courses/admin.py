@@ -20,3 +20,5 @@ class CourseAdmin(admin.ModelAdmin):
 
 
 # python manage.py dumpdata courses --indent=2  --output=courses/fixtures/subjects.json
+
+admin.site.index_template = 'memcache_status/admin_index.html'

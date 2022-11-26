@@ -28,6 +28,8 @@ class Course(models.Model):
     overview = models.TextField()
     created = models.DateTimeField(auto_now_add=True)
 
+    students = models.ManyToManyField(User, related_name='courses_joined', blank=True)
+    
     class Meta:
         ordering = ['-created']
 
@@ -73,6 +75,8 @@ class Content(models.Model):
     class Meta:
         ordering = ['order']
 
+from django.template.loader import render_to_string
+
 class ItemBase(models.Model):
     owner = models.ForeignKey(User,
                                 related_name='%(class)s_related',
@@ -87,6 +91,10 @@ class ItemBase(models.Model):
     
     def __str__(self):
         return self.title
+    
+    def render(self):
+        # print(f'courses/content/{self._meta.model_name}.html')
+        return render_to_string(f'courses/content/{self._meta.model_name}.html', {'item': self})
 
 class Text(ItemBase):
     content = models.TextField()
