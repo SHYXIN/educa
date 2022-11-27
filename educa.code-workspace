@@ -1,9 +1,15 @@
 {
 	"folders": [
 		{
+			"name": "api_example",
+			"path": "../api_example"
+		},
+		{
+			"name": "educa",
 			"path": "."
 		},
 		{
+			"name": "venv",
 			"path": "../venv"
 		}
 	],
